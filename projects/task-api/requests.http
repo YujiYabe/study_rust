@@ -1,0 +1,98 @@
+# VS Code REST Client用のサンプルリクエスト。
+# 先に `cargo run -p task-api` でサーバーを起動してください。
+# 各 `###` の上に表示される「Send Request」（リクエスト送信）を順番に押すとCRUDを確認できます。
+
+@baseUrl = http://127.0.0.1:3000
+
+### ヘルスチェック（204 No Content）
+GET {{baseUrl}}/health
+
+### GraphQL PlaygroundのHTMLを取得
+GET {{baseUrl}}/graphql
+
+### タスクを作成
+# @name createTask
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation CreateTask($input: CreateTask!) { createTask(input: $input) { id title description completed } }",
+  "variables": {
+    "input": {
+      "title": "REST ClientからGraphQLを学ぶ",
+      "description": "第8週のサンｃプルリクエスト"
+    }
+  }
+}
+
+### 全タスクを取得
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{
+  "query": "query ListTasks { tasks { id title description completed } }"
+}
+
+### 未完了タスクだけを取得
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{
+  "query": "query ListIncompleteTasks($completed: Boolean) { tasks(completed: $completed) { id title completed } }",
+  "variables": {
+    "completed": false
+  }
+}
+
+### 作成したタスクをIDで取得
+# `createTask`という名前のリクエスト結果から、JSONPathでIDを参照する。
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{
+  "query": "query GetTask($id: Int!) { task(id: $id) { id title description completed } }",
+  "variables": {
+    "id": {{createTask.response.body.$.data.createTask.id}}
+  }
+}
+
+### 作成したタスクを完了状態へ更新
+# @name updateTask
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation UpdateTask($id: Int!, $input: UpdateTask!) { updateTask(id: $id, input: $input) { id title description completed } }",
+  "variables": {
+    "id": {{createTask.response.body.$.data.createTask.id}},
+    "input": {
+      "title": "REST ClientからGraphQLを学ぶ",
+      "description": "更新済みのタスク",
+      "completed": true
+    }
+  }
+}
+
+### 入力エラーを確認（extensions.codeはVALIDATION_ERROR）
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation InvalidTask($input: CreateTask!) { createTask(input: $input) { id } }",
+  "variables": {
+    "input": {
+      "title": "   "
+    }
+  }
+}
+
+### 作成したタスクを削除
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation DeleteTask($id: Int!) { deleteTask(id: $id) }",
+  "variables": {
+    "id": {{createTask.response.body.$.data.createTask.id}}
+  }
+}
