@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+# 途中のコマンドが失敗した時点でコミットを中止する。
+set -eu
+
+# どのディレクトリからgit commitしても、リポジトリのルートで検査を実行する。
+repository_root=$(git rev-parse --show-toplevel)
+cd "$repository_root"
+
+if ! command -v pre-commit >/dev/null 2>&1; then
+    echo "エラー: pre-commitがインストールされていません。'make setup'を実行してください。" >&2
+    exit 1
+fi
+
+# .pre-commit-config.yamlに定義したCargoの品質チェックを実行する。
+exec pre-commit run --hook-stage pre-commit
